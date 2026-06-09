@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { RamiSabanLogo } from "./components/RamiSabanLogo";
 import {
   Send,
   Trash2,
@@ -72,8 +73,8 @@ const parseWhatsAppTextToHtml = (text: string) => {
 };
 
 export default function App() {
-  // Current operating mode requested by the user: "chat" | "whatsapp" | "report"
-  const [workMode, setWorkMode] = useState<"chat" | "whatsapp" | "report">("chat");
+  // Current operating mode requested by the user: "chat" | "whatsapp" | "report" | "branding"
+  const [workMode, setWorkMode] = useState<"chat" | "whatsapp" | "report" | "branding">("chat");
 
   // Chat message persistence
   const [messages, setMessages] = useState<Message[]>(() => {
@@ -523,6 +524,18 @@ export default function App() {
               <FileText className="w-3.5 h-3.5" />
               <span>צפייה בדוח בוקר</span>
             </button>
+
+            <button
+              onClick={() => setWorkMode("branding")}
+              className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                workMode === "branding"
+                  ? "bg-gradient-to-r from-orange-950 to-orange-850 text-[#ff7f4d] border border-orange-500/30 shadow-md"
+                  : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#ff7f4d]" />
+              <span>מיתוג מזון 🍔</span>
+            </button>
           </div>
 
           {/* Rami Saban Profile Frame */}
@@ -566,6 +579,7 @@ export default function App() {
                   {workMode === "chat" ? "צ'אט חופשי מול נועה" : ""}
                   {workMode === "whatsapp" ? "עריכת הודעה ותצוגה מקדימה ל-WhatsApp" : ""}
                   {workMode === "report" ? "ייצור ואישור דוח בוקר תפעולי" : ""}
+                  {workMode === "branding" ? "עיצוב ומיתוג שירותי המזון - ראמי סבן" : ""}
                 </span>
               </div>
               <button
@@ -1458,6 +1472,12 @@ export default function App() {
                     </div>
                   </div>
 
+                </div>
+              )}
+
+              {workMode === "branding" && (
+                <div id="branding-container" className="p-1">
+                  <RamiSabanLogo />
                 </div>
               )}
 

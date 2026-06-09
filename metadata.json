@@ -1,0 +1,6 @@
+{
+  "name": "נועה - מנהלת תפעול (ח. סבן)",
+  "description": "מערכת צ'אט לוגיסטית ואישית המופעלת על ידי בינה מלאכותית עבור חברת ח. סבן חומרי בניין לשימוש המנהל ראמי.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

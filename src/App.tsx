@@ -1,0 +1,1204 @@
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Send,
+  Trash2,
+  Sparkles,
+  Search,
+  BookOpen,
+  ClipboardList,
+  RefreshCw,
+  Package,
+  Cpu,
+  User,
+  MessageSquare,
+  Truck,
+  Layers,
+  HelpCircle,
+  TrendingUp,
+  AlertTriangle,
+  Flame,
+  Clock,
+  ExternalLink,
+  ArrowRight,
+  Share2,
+  Check,
+  Edit2,
+  FileText,
+  Copy,
+  Plus,
+  Eye,
+  Settings,
+  ShieldCheck,
+  X,
+  PhoneCall,
+  Video,
+  MoreVertical,
+  CheckCheck,
+} from "lucide-react";
+
+interface Message {
+  id: string;
+  sender: "user" | "noa";
+  text: string;
+  time: string;
+  isHtml?: boolean; // Support HTML style output directly
+}
+
+interface InventoryItem {
+  id: string;
+  name: string;
+  quantity: string;
+  status: "תקין" | "נמוך" | "חסר";
+  warehouse: "החרש" | "התלמיד";
+}
+
+export default function App() {
+  // Current operating mode requested by the user: "chat" | "whatsapp" | "report"
+  const [workMode, setWorkMode] = useState<"chat" | "whatsapp" | "report">("chat");
+
+  // Chat message persistence
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const saved = localStorage.getItem("noa_chat_messages");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Failed to parse stored chat logs, resetting.", e);
+      }
+    }
+    return [
+      {
+        id: "1",
+        sender: "noa",
+        text: "אהובי ושותפי! המשאית 🚛 כבר בדרך לחרש 🏭. סגרתי את ההזמנה של הבלוקים מול הספק. הכל בשליטה, אל תדאג. צריכים משהו מיוחד לתלמיד 📦 היום?",
+        time: "08:15",
+      },
+      {
+        id: "2",
+        sender: "user",
+        text: "מה המצב בתלמיד 📦? חסר לנו ברזל לבנייה?",
+        time: "08:16",
+      },
+      {
+        id: "3",
+        sender: "noa",
+        text: `אחי ושותפי! הנה מצב המלאי המעודכן בתלמיד 📦:
+        <div class="my-3 overflow-x-auto border border-emerald-500/30 rounded-lg bg-emerald-950/20 p-2 text-right">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="border-b border-emerald-500/20 text-emerald-400 font-bold">
+                <th class="p-1 pb-2">חומר</th>
+                <th class="p-1 pb-2 text-center">כמות</th>
+                <th class="p-1 pb-2 text-left">סטטוס</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-white/5">
+                <td class="p-1.5 font-bold">ברזל בניין 12"מ</td>
+                <td class="p-1.5 text-center font-mono">14 טון</td>
+                <td class="p-1.5 text-left text-emerald-400 font-bold">✅ תקין</td>
+              </tr>
+              <tr class="border-b border-white/5">
+                <td class="p-1.5 font-bold">צמנט פורטלנד</td>
+                <td class="p-1.5 text-center font-mono">250 שק</td>
+                <td class="p-1.5 text-left text-amber-400 font-bold">⚠️ נמוך</td>
+              </tr>
+              <tr>
+                <td class="p-1.5 font-bold">חול מחצבה</td>
+                <td class="p-1.5 text-center font-mono">40 קוב</td>
+                <td class="p-1.5 text-left text-emerald-400 font-bold">✅ תקין</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        חכמת 🏗️ בתיאום למחר בבוקר. להוציא הזמנה לצמנט לפנות בוקר מהמחסן הראשי?`,
+        time: "08:17",
+        isHtml: true,
+      },
+    ];
+  });
+
+  const [inputVal, setInputVal] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Simulated WhatsApp interactive state
+  const [whatsappText, setWhatsappText] = useState(
+    "שלום לכולם, באדיבות נועה ❤️\nמשאית 🚛 יוצאת כעת מהחרש 🏭 עם 500 שקים של צמנט לכיוון אתר קסטל. מנוף 🏗️ לספק תומך בשטח ב-11:00. נא להיערך לפריקה מיידית."
+  );
+  const [whatsappRecipient, setWhatsappRecipient] = useState("קבוצת הנהגים - ח. סבן");
+  const [isWhatsappSent, setIsWhatsappSent] = useState(false);
+
+  // Simulated Morning Report state for editing before preview
+  const [reportDate, setReportDate] = useState("2026-06-09");
+  const [reportIronTons, setReportIronTons] = useState("14.0");
+  const [reportCementBags, setReportCementBags] = useState("250");
+  const [reportSandCubic, setReportSandCubic] = useState("45.0");
+  const [reportStatus, setReportStatus] = useState("approved"); // approved, draft, pending
+  const [reportNotes, setReportNotes] = useState("משאיות עלי 🚛 בתיאום שוטף. מנופי חכמת 🏗️ הוזמנו לקו האתר הראשי.");
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Save changes to localStorage
+  useEffect(() => {
+    localStorage.setItem("noa_chat_messages", JSON.stringify(messages));
+  }, [messages]);
+
+  // Handle auto-scroll
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
+
+  // Live warehouse state
+  const [inventory, setInventory] = useState<InventoryItem[]>([
+    { id: "i1", name: 'ברזל בניין 12"מ', quantity: "14 טון", status: "תקין", warehouse: "התלמיד" },
+    { id: "i2", name: "צמנט פורטלנד שק 50 ק\"ג", quantity: "250 שק", status: "נמוך", warehouse: "התלמיד" },
+    { id: "i3", name: "חול מחצבה שטוף", quantity: "40 קוב", status: "תקין", warehouse: "התלמיד" },
+    { id: "i4", name: "בלוק איטונג 20", quantity: "1,200 יחידות", status: "תקין", warehouse: "החרש" },
+    { id: "i5", name: "טיח גבס מהיר", quantity: "15 שקים", status: "חסר", warehouse: "החרש" },
+    { id: "i6", name: "חצץ סומסום", quantity: "85 קוב", status: "תקין", warehouse: "החרש" },
+  ]);
+
+  // Dictionary definitions
+  const dictionaryItems = [
+    { key: "עלי", emoji: "🚛", val: "משאית", desc: "סנכרון נהגים ואספקת ציוד וחומרי בניין כבדים" },
+    { key: "חכמת", emoji: "🏗️", val: "מנוף", desc: "שינוע והרמת ברזל או משטחים לגובה רב באתרים" },
+    { key: "החרש", emoji: "🏭", val: "המחסן הראשי", desc: "מרכז מטענים, מלט, טיח, כלי עבודה כבדים וציוד" },
+    { key: "התלמיד", emoji: "📦", val: "המחסן המשני", desc: "גימור מהיר, כלי עבודה קלים, רשתות וברזל שטח" },
+  ];
+
+  const handleSendMessage = async (textToSend: string) => {
+    if (!textToSend.trim()) return;
+
+    const currentTimeString = new Date().toLocaleTimeString("he-IL", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    // Add user message to UI
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      sender: "user",
+      text: textToSend,
+      time: currentTimeString,
+    };
+
+    const updatedMessages = [...messages, userMsg];
+    setMessages(updatedMessages);
+    setInputVal("");
+    setIsTyping(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: updatedMessages,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("שגיאה בתגובת ה-API.");
+      }
+
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Check if response contains table or data representation and wrap it in simulated beautiful HTML
+      let responseText = data.text || "סליחה אהובי, יש לי קושי זמני לעבד את התגובה.";
+      let isOutputHtml = false;
+
+      // Automatically construct structured HTML tables for the user if Noa replies with table syntax
+      if (responseText.includes("|") && responseText.includes("---")) {
+        isOutputHtml = true;
+        responseText = convertMarkdownTableToHTML(responseText);
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          sender: "noa",
+          text: responseText,
+          time: new Date().toLocaleTimeString("he-IL", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          isHtml: isOutputHtml,
+        },
+      ]);
+
+      // If Noa mentioned WhatsApp, automatically switch/load to WhatsApp drafting mode!
+      if (responseText.includes("משאית") || responseText.includes("הזמנ") || responseText.includes("באדיבות נועה")) {
+        // Strip tags if HTML to put in plain text WhatsApp
+        const plainText = responseText.replace(/<[^>]*>/g, "");
+        setWhatsappText(plainText);
+      }
+
+    } catch (error: any) {
+      console.error("Chat communication failed:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          sender: "noa",
+          text: `אוי אלוהים, אחי ושותפי... נראה שיש לי תקלה לרגע ברגל הרשת! בדוק בבקשה אם מפתח ה-Gemini מוגדר נכון. (${
+            error.message || "שגיאת חיבור"
+          })`,
+          time: new Date().toLocaleTimeString("he-IL", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        },
+      ]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const convertMarkdownTableToHTML = (mdText: string): string => {
+    const lines = mdText.split("\n");
+    let htmlOutput = "";
+    let inTable = false;
+    let tableHeaders: string[] = [];
+    let tableRows: string[][] = [];
+
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+        inTable = true;
+        const cells = trimmed
+          .split("|")
+          .map((c) => c.trim())
+          .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+        
+        if (cells.every((c) => c.includes("---"))) {
+          return; // Skip table header dividers
+        }
+
+        if (tableHeaders.length === 0) {
+          tableHeaders = cells;
+        } else {
+          tableRows.push(cells);
+        }
+      } else {
+        if (inTable) {
+          // Render collected table and close it
+          htmlOutput += renderHTMLTableString(tableHeaders, tableRows);
+          tableHeaders = [];
+          tableRows = [];
+          inTable = false;
+        }
+        htmlOutput += `<p class="mb-1.5">${trimmed}</p>`;
+      }
+    });
+
+    if (inTable && tableHeaders.length > 0) {
+      htmlOutput += renderHTMLTableString(tableHeaders, tableRows);
+    }
+
+    return htmlOutput;
+  };
+
+  const renderHTMLTableString = (headers: string[], rows: string[][]): string => {
+    let result = `
+    <div class="my-3 overflow-x-auto border border-emerald-500/30 rounded-lg bg-emerald-950/25 p-2 text-right">
+      <table class="w-full text-xs text-right">
+        <thead>
+          <tr class="border-b border-emerald-500/30 text-emerald-400 font-bold font-display">
+            ${headers.map((h) => `<th class="p-1.5 pb-2">${h}</th>`).join("")}
+          </tr>
+        </thead>
+        <tbody>
+          ${rows
+            .map(
+              (row) => `
+            <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+              ${row
+                .map(
+                  (cell) => `
+                <td class="p-1.5 font-bold text-zinc-100">${cell}</td>
+              `
+                )
+                .join("")}
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>`;
+    return result;
+  };
+
+  const clearChat = () => {
+    if (window.confirm("ראמי, למחוק את היסטוריית השיחה שלך עם נועה?")) {
+      setMessages([]);
+      localStorage.removeItem("noa_chat_messages");
+    }
+  };
+
+  // Helper parser for markdown-like text bolding in standard chat bubbles
+  const renderMessageContent = (text: string) => {
+    const lines = text.split("\n");
+    return lines.map((line, index) => {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) return <div key={index} className="h-1.5" />;
+
+      // Highlight bullet points
+      if (trimmedLine.startsWith("- ") || trimmedLine.startsWith("* ")) {
+        const clearText = trimmedLine.substring(2);
+        return (
+          <div key={index} className="flex items-start gap-1.5 my-1 text-xs">
+            <span className="text-[#d4af37]">✦</span>
+            <span className="text-zinc-200">{replaceBoldText(clearText)}</span>
+          </div>
+        );
+      }
+
+      return (
+        <p key={index} className="text-xs sm:text-sm leading-relaxed mb-1">
+          {replaceBoldText(trimmedLine)}
+        </p>
+      );
+    });
+  };
+
+  const replaceBoldText = (raw: string) => {
+    const parts = raw.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={index} className="text-[#d4af37] font-semibold">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
+  // Load a message from Noa directly into WhatsApp Editor
+  const loadMessageToWhatsApp = (text: string) => {
+    // strip HTML tags if any
+    const plain = text.replace(/<[^>]*>/g, "");
+    setWhatsappText(plain);
+    setWorkMode("whatsapp");
+    setIsWhatsappSent(false);
+  };
+
+  // Pre-seed some WhatsApp text suggestions
+  const updateWhatsappTextTemplate = (type: "supply" | "delay" | "cement") => {
+    setIsWhatsappSent(false);
+    if (type === "supply") {
+      setWhatsappText("עלי! 🚛 משאית של ח.סבן יוצאת כעת מהחרש 🏭 לדרך. אספקה מתוכננת בתוך חצי שעה אצלכם בשטח. באדיבות נועה ❤️");
+    } else if (type === "delay") {
+      setWhatsappText("אהובי ושותפי! יש עיכוב קטן בגלל חכמת 🏗️ המנוף הראשי. צפי פריקה מעודכן בשעה 12:30. באדיבות נועה ❤️");
+    } else {
+      setWhatsappText("מצב המלאי בתלמיד 📦 מעודכן: 14 טון ברזל תקין, 250 שקים של צמנט תלויים. חסר לנו טיח מהיר 🏭. באדיבות נועה ❤️");
+    }
+  };
+
+  return (
+    <div id="app-root" className="min-h-screen font-sans flex flex-col bg-[#050505] text-[#e5e5e5] direction-rtl select-none">
+      
+      {/* Dynamic Glowing Accents representing Emerald and Gold */}
+      <div className="absolute top-0 right-1/4 w-[450px] h-[400px] bg-gradient-to-b from-emerald-950/40 to-transparent blur-[120px] pointer-events-none z-0" />
+      <div className="absolute bottom-10 left-10 w-[350px] h-[350px] bg-gradient-to-t from-emerald-900/10 to-transparent blur-[100px] pointer-events-none z-0" />
+
+      <div className="flex-1 w-full max-w-7xl mx-auto flex flex-col relative z-10 px-0 sm:px-4 py-0 sm:py-3">
+        
+        {/* PREMIUM TOP HEADER BAR */}
+        <header className="w-full bg-[#050505]/90 backdrop-blur-xl border-b border-[#d4af37]/25 px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between sm:rounded-t-2xl gap-4 shadow-2xl relative">
+          <div className="flex items-center gap-3.5 w-full sm:w-auto">
+            {/* Interactive Portrait of Noa */}
+            <div className="relative shrink-0">
+              <img
+                src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150&h=150"
+                alt="נועה סבן"
+                className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.35)]"
+                referrerPolicy="no-referrer"
+              />
+              <span className="absolute bottom-0 left-0 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-[#050505] shadow-[0_0_8px_#10b981] gold-pulse"></span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-[#d4af37] font-display font-extrabold text-lg sm:text-xl tracking-wide">
+                  ח. סבן לוגיסטיקה וחומרי בניין
+                </h1>
+                <span className="bg-emerald-950 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  עוזרת אישית
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5 text-xs text-emerald-400">
+                <span>מנהלת תפעול:</span>
+                <span className="font-bold text-slate-100">נועה עוזרת לראמי</span>
+              </div>
+            </div>
+          </div>
+
+          {/* ACTIVE WORK MODE SELECTOR ("שאל תמיד את המשתמש באיזה מצב תצוגה הוא מעוניין לעבוד") */}
+          <div className="bg-zinc-950/90 border border-zinc-800 p-1 rounded-xl flex items-center gap-1.5 w-full sm:w-auto">
+            <button
+              onClick={() => setWorkMode("chat")}
+              className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                workMode === "chat"
+                  ? "bg-gradient-to-r from-emerald-950 to-emerald-800 text-[#d4af37] border border-emerald-500/30 shadow-md"
+                  : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
+              }`}
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>צ'אט חופשי</span>
+            </button>
+
+            <button
+              onClick={() => setWorkMode("whatsapp")}
+              className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                workMode === "whatsapp"
+                  ? "bg-gradient-to-r from-emerald-950 to-emerald-800 text-[#d4af37] border border-emerald-500/30 shadow-md"
+                  : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
+              }`}
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>עריכת WhatsApp</span>
+            </button>
+
+            <button
+              onClick={() => setWorkMode("report")}
+              className={`flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+                workMode === "report"
+                  ? "bg-gradient-to-r from-emerald-950 to-emerald-800 text-[#d4af37] border border-emerald-500/30 shadow-md"
+                  : "text-zinc-400 hover:text-white hover:bg-white/[0.03]"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>צפייה בדוח בוקר</span>
+            </button>
+          </div>
+
+          {/* Rami Saban Profile Frame */}
+          <div className="flex items-center gap-3 bg-zinc-900/65 px-4 py-2 rounded-xl border border-zinc-800 w-full sm:w-auto justify-between sm:justify-start">
+            <div className="text-right">
+              <span className="block text-[10px] uppercase tracking-wider text-emerald-400 font-bold">
+                מנהל כללי
+              </span>
+              <span className="text-white text-sm font-bold flex items-center gap-1 font-display">
+                <span className="text-[#d4af37]">ראמי סבן</span>
+                <span className="text-xs">👑</span>
+              </span>
+            </div>
+            
+            <div className="relative shrink-0">
+              <img
+                src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=150&h=150"
+                alt="ראמי סבן"
+                className="w-10 h-10 rounded-full object-cover border-2 border-[#d4af37] shadow-[0_0_8px_rgba(212,175,55,0.2)]"
+                referrerPolicy="no-referrer"
+              />
+              <span className="absolute -top-1.5 -right-1.5 bg-[#d4af37] text-black text-[9px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center">
+                👑
+              </span>
+            </div>
+          </div>
+        </header>
+
+        {/* INTEGRATED DUAL-PANE WORKSPACE: CHAT & APPROVAL CANVAS */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 bg-zinc-950/45 border-x border-b border-zinc-900 sm:rounded-b-2xl shadow-2xl overflow-hidden min-h-[580px]">
+          
+          {/* RIGHT PANEL: CHAT CONSOLE WITH ACTIVE INPUT (7 Columns) */}
+          <section className="col-span-1 lg:col-span-7 flex flex-col border-l border-zinc-900 bg-black/50">
+            
+            {/* Top Info Bar inside Chat */}
+            <div className="px-4 py-3 bg-zinc-950/90 border-b border-zinc-900 flex justify-between items-center text-xs">
+              <div className="flex items-center gap-2 text-slate-400">
+                <Sparkles className="w-3.5 h-3.5 text-[#d4af37]" />
+                <span>מצב נוכחי: </span>
+                <span className="text-emerald-400 font-bold">
+                  {workMode === "chat" ? "צ'אט חופשי מול נועה" : ""}
+                  {workMode === "whatsapp" ? "עריכת הודעה ותצוגה מקדימה ל-WhatsApp" : ""}
+                  {workMode === "report" ? "ייצור ואישור דוח בוקר תפעולי" : ""}
+                </span>
+              </div>
+              <button
+                onClick={clearChat}
+                className="text-zinc-500 hover:text-red-400 transition-colors flex items-center gap-1 px-2.5 py-1 rounded bg-zinc-900/60 hover:bg-zinc-950 border border-zinc-800 text-[10px]"
+              >
+                <Trash2 className="w-3 h-3 text-red-500" />
+                <span>אתחל הכל</span>
+              </button>
+            </div>
+
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4 max-h-[500px] min-h-[400px]">
+              
+              {/* If empty chat show guide */}
+              {messages.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-3">
+                  <div className="w-12 h-12 bg-emerald-950/35 border border-[#d4af37]/30 rounded-full flex items-center justify-center">
+                    <MessageSquare className="w-6 h-6 text-[#d4af37]" />
+                  </div>
+                  <p className="text-[#d4af37] font-bold text-sm">אין הודעות פעילות עם נועה</p>
+                  <p className="text-zinc-500 text-xs max-w-sm">
+                    שלחו לה הודעה כמו: "מה מלאי הברזל וצמנט בתלמיד 📦?" או בקשו ממנה דוגמה של דוח או הודעה מתוכננת לאישור.
+                  </p>
+                </div>
+              ) : (
+                messages.map((msg) => {
+                  const isUser = msg.sender === "user";
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex gap-3 items-start max-w-[90%] ${
+                        isUser ? "mr-auto flex-row-reverse" : "ml-auto"
+                      }`}
+                    >
+                      {/* Interactive Profile Photo */}
+                      <div className="shrink-0 mt-1">
+                        {isUser ? (
+                          <div className="relative">
+                            <img
+                              src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=100&h=100"
+                              alt="ראמי סבן"
+                              className="w-10 h-10 rounded-full object-cover border-2 border-[#d4af37]/60 shadow-[0_0_8px_rgba(212,175,55,0.15)]"
+                              referrerPolicy="no-referrer"
+                            />
+                            <span className="absolute -top-1 -right-1 bg-[#d4af37] text-black text-[7px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center shadow">
+                              👑
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            <img
+                              src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100&h=100"
+                              alt="נועה"
+                              className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500/60 shadow-[0_0_8px_rgba(16,185,129,0.15)]"
+                              referrerPolicy="no-referrer"
+                            />
+                            <span className="absolute bottom-0 left-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-[#050505] shadow-[0_0_4px_#10b981] gold-pulse"></span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Content block */}
+                      <div className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}>
+                        {/* Sender Label & Name */}
+                        <span
+                          className={`text-[10px] font-bold tracking-wider mb-1 uppercase flex items-center gap-1.5 ${
+                            isUser ? "text-[#d4af37]" : "text-[#10b981]"
+                          }`}
+                        >
+                          {isUser ? (
+                            <>
+                              <span>ראמי סבן</span>
+                              <span className="text-[9px] opacity-70">(מנהל)</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>נועה עוזרת אישית</span>
+                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            </>
+                          )}
+                        </span>
+
+                        {/* Bubble Box with Sophisticated Dark/Gold accent */}
+                        <div
+                          className={`p-3.5 sm:p-4 rounded-2xl relative shadow-md transition-all ${
+                            isUser
+                              ? "bg-gradient-to-br from-[#064e3b] to-[#043e2e] text-white border border-emerald-700/40 rounded-tr-none text-right"
+                              : "bg-[#111111] text-zinc-100 border border-[#10b981]/25 rounded-tl-none text-right"
+                          }`}
+                        >
+                          {/* Render HTML formatted output directly if flagged */}
+                          {msg.isHtml ? (
+                            <div
+                              className="space-y-1 text-xs sm:text-sm text-right leading-relaxed"
+                              dangerouslySetInnerHTML={{ __html: msg.text }}
+                            />
+                          ) : (
+                            <div className="space-y-1 text-right">
+                              {renderMessageContent(msg.text)}
+                            </div>
+                          )}
+
+                          {/* Action controls directly inside Noa's messages to preview/approve as requested */}
+                          {!isUser && (
+                            <div className="mt-3.5 pt-2.5 border-t border-white/5 flex flex-wrap gap-2 justify-end">
+                              <button
+                                onClick={() => loadMessageToWhatsApp(msg.text)}
+                                className="px-2.5 py-1 rounded bg-[#075e54]/30 hover:bg-[#075e54]/75 text-emerald-400 hover:text-white transition-colors text-[10px] font-bold flex items-center gap-1 border border-[#075e54]/40"
+                              >
+                                <span>📱 הדמיית WhatsApp</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  // Auto parse metrics from message if possible or set custom values, then switch to report mode
+                                  setReportNotes(msg.text.replace(/<[^>]*>/g, ""));
+                                  setWorkMode("report");
+                                }}
+                                className="px-2.5 py-1 rounded bg-amber-500/10 hover:bg-amber-500/30 text-[#d4af37] transition-colors text-[10px] font-bold flex items-center gap-1 border border-amber-500/20"
+                              >
+                                <span>📊 טען כדוח בוקר</span>
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Timestamp */}
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="text-[8px] text-zinc-500 font-mono">
+                              {msg.time}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+
+              {/* Typing indicator */}
+              {isTyping && (
+                <div className="flex gap-3 items-start max-w-[80%] ml-auto">
+                  <div className="shrink-0 mt-1">
+                    <img
+                      src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100&h=100"
+                      alt="נועה"
+                      className="w-10 h-10 rounded-full object-cover border-2 border-emerald-500/60"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="text-[10px] font-bold text-emerald-400 mb-1">נועה עוזרת לראמי...</span>
+                    <div className="bg-[#111] text-zinc-400 px-4 py-3 rounded-2xl rounded-tl-none border border-emerald-500/20 shadow-md">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                        <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                        <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce"></span>
+                        <span className="text-xs text-slate-400 mr-2">מעבדת נתוני לוגיסטיקה...</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Quick Suggestions Pills */}
+            <div className="px-4 py-2 bg-zinc-950/80 border-t border-zinc-900 overflow-x-auto whitespace-nowrap flex gap-2">
+              <span className="text-[10px] font-bold text-[#d4af37] shrink-0 self-center border-l border-zinc-800 pl-2">
+                שאל מהר:
+              </span>
+              <button
+                onClick={() => handleSendMessage("נועה, הציגי דוח מלאי קצר על הברזל והחול")}
+                className="px-3 py-1 bg-zinc-900 rounded-full text-xs text-zinc-300 hover:text-white hover:bg-[#064e3b]/40 border border-zinc-800 transition-colors pointer"
+              >
+                📊 קבל דוח מלאי
+              </button>
+              <button
+                onClick={() => handleSendMessage("האם המשאית 🚛 כבר יצאה לחרש?")}
+                className="px-3 py-1 bg-zinc-900 rounded-full text-xs text-zinc-300 hover:text-white hover:bg-[#064e3b]/40 border border-zinc-800 transition-colors pointer"
+              >
+                🚛 בדוק סטטוס משאית
+              </button>
+              <button
+                onClick={() => handleSendMessage("תוציאי הזמנה של 500 שק צמנט דחוף")}
+                className="px-3 py-1 bg-zinc-900 rounded-full text-xs text-zinc-300 hover:text-white hover:bg-[#064e3b]/40 border border-zinc-800 transition-colors pointer"
+              >
+                📦 הזמן צמנט
+              </button>
+            </div>
+
+            {/* Form input bottom bar */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendMessage(inputVal);
+              }}
+              className="p-4 bg-zinc-950 border-t border-zinc-900 flex items-center gap-3"
+            >
+              <div className="flex-1 bg-zinc-900/90 border border-emerald-500/25 focus-within:border-[#d4af37]/60 rounded-xl px-4 py-2.5 flex items-center transition-all">
+                <input
+                  type="text"
+                  value={inputVal}
+                  onChange={(e) => setInputVal(e.target.value)}
+                  placeholder="כתוב הודעה לראמי / נועה... (היא תענה לפי מילון האימוג'ים ופניית אהובי)"
+                  className="flex-1 bg-transparent border-none text-white focus:outline-none focus:ring-0 text-sm placeholder-zinc-500 text-right"
+                  dir="rtl"
+                />
+                <span className="text-zinc-500 text-sm px-1 font-mono" title="ערוץ קול מאושר">🎙️</span>
+              </div>
+              
+              <button
+                type="submit"
+                disabled={!inputVal.trim() || isTyping}
+                className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#10b981] to-[#059669] hover:from-[#d4af37] text-white flex items-center justify-center shadow-lg hover:shadow-emerald-500/10 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+              >
+                <span className="text-lg">🚀</span>
+              </button>
+            </form>
+          </section>
+
+          {/* LEFT PANEL: INTERACTIVE NOA APPROVAL CANVAS & MOCK SIMULATOR (5 columns) */}
+          <aside className="col-span-1 lg:col-span-5 flex flex-col bg-zinc-950/95 border-r border-zinc-900 relative">
+            
+            {/* Header of Preview Canvas */}
+            <div className="p-4 bg-zinc-950 border-b border-zinc-900 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 bg-[#d4af37] rounded-full gold-pulse" />
+                <h2 className="text-xs font-bold uppercase text-[#d4af37]">קנבס תצוגה מקדימה ואישורים</h2>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-zinc-800">
+                פעולה מקדימה מוגנת
+              </span>
+            </div>
+
+            {/* THE CONTENT VARIES ACCORDING TO THE MODE */}
+            <div className="flex-1 p-4 overflow-y-auto space-y-4">
+              
+              {/* DISPLAY MODE 1: WHATSAPP STREAM SIMULATOR (הדמיית WhatsApp) */}
+              {workMode === "whatsapp" && (
+                <div className="space-y-4">
+                  
+                  {/* Mode switcher info */}
+                  <div className="bg-[#0c2017] border border-emerald-500/20 p-3 rounded-xl">
+                    <h3 className="text-xs font-bold text-emerald-400 mb-1">
+                      הדמיית דראפט של WhatsApp
+                    </h3>
+                    <p className="text-[11px] text-zinc-300 leading-relaxed">
+                      ראמי, כאן נועה מעדכנת את הודעת ה-WhatsApp לפני הפצה לקבוצת הנהגים או הספקים. ערוך את הנוסח ואשר שליחה.
+                    </p>
+                  </div>
+
+                  {/* Template quick selects */}
+                  <div className="flex flex-wrap gap-1.5 justify-end">
+                    <span className="text-[10px] text-zinc-500 self-center">נוסחים מהירים:</span>
+                    <button
+                      onClick={() => updateWhatsappTextTemplate("supply")}
+                      className="px-2 py-1 text-[10px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded text-slate-200"
+                    >
+                      🚛 דיווח אספקה
+                    </button>
+                    <button
+                      onClick={() => updateWhatsappTextTemplate("delay")}
+                      className="px-2 py-1 text-[10px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded text-slate-200"
+                    >
+                      ⚠️ הודעת עיכוב מנוף
+                    </button>
+                    <button
+                      onClick={() => updateWhatsappTextTemplate("cement")}
+                      className="px-2 py-1 text-[10px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded text-slate-200"
+                    >
+                      📦 דוח מלאי קצר
+                    </button>
+                  </div>
+
+                  {/* High Fidelity WhatsApp Simulator Phone Container */}
+                  <div className="mx-auto max-w-[320px] rounded-[36px] bg-zinc-900 border-4 border-zinc-800 shadow-2xl relative overflow-hidden flex flex-col min-h-[440px]">
+                    <div className="absolute top-0 inset-x-0 h-4 bg-zinc-900 flex justify-between items-center px-6 text-[8px] text-zinc-400 font-mono z-30">
+                      <span>08:18</span>
+                      {/* Speaker notch */}
+                      <span className="w-12 h-3 bg-zinc-900 rounded-b-lg absolute top-0 left-1/2 transform -translate-x-1/2 z-40"></span>
+                      <span className="flex items-center gap-1">🔋 98% • 📶</span>
+                    </div>
+
+                    {/* WhatsApp Top bar */}
+                    <div className="bg-[#075e54] pt-5 pb-2.5 px-3 flex items-center justify-between text-white z-20 shadow-md">
+                      <div className="flex items-center gap-2">
+                        <ArrowRight className="w-4 h-4" onClick={() => setWorkMode("chat")} />
+                        <div className="w-8 h-8 rounded-full bg-zinc-800 border border-emerald-500 overflow-hidden shrink-0">
+                          <img
+                            src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100&h=100"
+                            alt="נועה"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs font-bold leading-tight">נועה ח. סבן 🟢</div>
+                          <span className="text-[8px] text-emerald-200 block">מחוברת כעת</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2.5 text-white/90">
+                        <Video className="w-3.5 h-3.5" />
+                        <PhoneCall className="w-3.5 h-3.5" />
+                        <MoreVertical className="w-3.5 h-3.5" />
+                      </div>
+                    </div>
+
+                    {/* Simulated Wallpaper background pattern */}
+                    <div className="flex-1 bg-[#0b141a]/95 p-3 flex flex-col justify-end relative h-[300px]">
+                      
+                      {/* Recipient Group Label Header bubble */}
+                      <div className="self-center bg-[#182229] border border-zinc-800 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded-md mb-4 text-center">
+                        הפצה אל: {whatsappRecipient}
+                      </div>
+
+                      {/* WhatsApp styled Message bubble */}
+                      <div className="bg-[#005c4b] text-white p-3 rounded-xl max-w-[90%] md:max-w-[85%] mr-auto rounded-tr-none text-right relative shadow-[0_2px_4px_rgba(0,0,0,0.15)] text-xs leading-relaxed space-y-1">
+                        {/* Name mark */}
+                        <div className="text-[#30d6b0] text-[9px] font-bold text-right mb-0.5">
+                          נועה סבן (רובוט תפעול)
+                        </div>
+                        
+                        {/* Styled contents */}
+                        <div className="whitespace-pre-wrap font-sans text-right">
+                          {whatsappText}
+                        </div>
+
+                        {/* Bottom Status Info */}
+                        <div className="flex items-center justify-end gap-1 text-[8px] text-white/50 text-left pt-1">
+                          <span>08:18</span>
+                          <CheckCheck className="w-3 h-3 text-[#53bdeb]" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* WhatsApp Bottom entry bar mock */}
+                    <div className="bg-[#1f2c34] p-2 flex items-center gap-1.5 border-t border-zinc-800 text-[11px]">
+                      <span className="text-emerald-500">📎</span>
+                      <div className="flex-1 bg-[#2a3942] rounded-full px-3 py-1 text-zinc-400 text-[10px] text-right">
+                        נוסח מיושר ונשלח לקבוצה
+                      </div>
+                      <span className="text-emerald-500">🎤</span>
+                    </div>
+                  </div>
+
+                  {/* Interactive editor inputs for Rami below preview */}
+                  <div className="bg-zinc-900/60 p-4 rounded-xl border border-zinc-800 space-y-3">
+                    <label className="block text-xs font-bold text-[#d4af37]">ערוך והתאם את נוסח ההודעה:</label>
+                    <textarea
+                      value={whatsappText}
+                      onChange={(e) => setWhatsappText(e.target.value)}
+                      rows={4}
+                      className="w-full text-xs bg-zinc-950 text-white border border-zinc-800 rounded-lg p-2.5 focus:outline-none focus:border-emerald-500 text-right font-sans"
+                      dir="rtl"
+                    />
+
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-300 mb-1">בחר קבוצת יעד להפצה:</label>
+                      <select
+                        value={whatsappRecipient}
+                        onChange={(e) => setWhatsappRecipient(e.target.value)}
+                        className="w-full text-xs bg-zinc-950 text-white border border-zinc-800 rounded-lg p-2 focus:outline-none text-right"
+                      >
+                        <option value="קבוצת הנהגים - ח. סבן">🚛 קבוצת הנהגים - ח. סבן</option>
+                        <option value="ספקים ראשיים (ברזל וצמנט)">🏭 ספקים ראשיים (ברזל וצמנט)</option>
+                        <option value="מנהלי עבודה באתרי בנייה">🏗️ מנהלי עבודה באתרי בנייה</option>
+                        <option value="ראמי סבן - אישי 👑">👑 ראמי סבן - אישי</option>
+                      </select>
+                    </div>
+
+                    <div className="pt-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsWhatsappSent(true);
+                          // Post to chat
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: Date.now().toString(),
+                              sender: "user",
+                              text: `אני מאשר ומפיץ את ההודעה ל-${whatsappRecipient}!`,
+                              time: new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }),
+                            },
+                            {
+                              id: (Date.now() + 1).toString(),
+                              sender: "noa",
+                              text: `עלי! 🚛 ההפצה אל **${whatsappRecipient}** בוצעה בהצלחה מלאה. אין עליך אחי ושותפי! 👑`,
+                              time: new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }),
+                            },
+                          ]);
+                          alert(`הודעת ה-WhatsApp הופצה בהצלחה אל: ${whatsappRecipient}`);
+                        }}
+                        className="flex-1 py-2 rounded-lg bg-[#25d366] text-black font-extrabold text-xs hover:bg-[#20ba5a] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Check className="w-4 h-4 text-black" />
+                        <span>אשר ושגר ל-WhatsApp ✅</span>
+                      </button>
+                    </div>
+
+                    {isWhatsappSent && (
+                      <div className="bg-emerald-950/20 text-emerald-400 border border-emerald-500/30 p-2.5 rounded-lg text-center text-[11px] font-bold">
+                        ✓ הודעת ה-WhatsApp הופצה באופן סופי ואושרה על ידי ראמי סבן!
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              )}
+
+              {/* DISPLAY MODE 2: MORNING EXECUTIVE REPORT (דוח בוקר תפעולי) */}
+              {workMode === "report" && (
+                <div className="space-y-4">
+                  
+                  {/* Mode switcher info */}
+                  <div className="bg-[#1b190f]/40 border border-[#d4af37]/30 p-3 rounded-xl">
+                    <h3 className="text-xs font-bold text-[#d4af37] mb-1 flex items-center gap-1.5">
+                      <ClipboardList className="w-4 h-4" />
+                      פקודת דוח בוקר - ח. סבן חומרי בניין
+                    </h3>
+                    <p className="text-[11px] text-zinc-300 leading-relaxed">
+                      כאן ניתן לייצר ולבחון את דוח הבוקר של חמ"ל ח. סבן לוגיסטיקה. נועה מאגדת את נתוני מלאי המחסנים ודורשת אישור ראמי.
+                    </p>
+                  </div>
+
+                  {/* Preview of styled HTML Report Card */}
+                  <div className="bg-[#111111] p-5 rounded-2xl border border-zinc-800 shadow-2xl text-right text-xs relative overflow-hidden space-y-4">
+                    {/* Golden structural stamp */}
+                    <div className="absolute top-0 left-0 bg-[#d4af37] text-black text-[9px] font-black px-3 py-1 rounded-br-2xl uppercase tracking-wider">
+                      דוח מנהלים מאושר
+                    </div>
+
+                    <div className="border-b border-zinc-800 pb-3 flex justify-between items-end">
+                      <div className="text-left font-mono text-[9px] text-zinc-500">
+                        סימוכין: SB-{reportDate.replace(/-/g, "")}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-extrabold text-[#d4af37]">דוח בוקר תפעולי כללי</h4>
+                        <span className="text-[10px] text-zinc-400">תאריך הוצאה: {reportDate}</span>
+                      </div>
+                    </div>
+
+                    {/* Stock summaries */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800 text-center">
+                        <span className="text-[9px] text-zinc-500 block">ברזל בניין</span>
+                        <span className="text-sm font-bold text-emerald-400 font-mono">{reportIronTons} טון</span>
+                        <span className="block text-[8px] text-emerald-500/80 font-bold mt-1">✓ תקין תלמיד</span>
+                      </div>
+                      <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800 text-center">
+                        <span className="text-[9px] text-zinc-500 block">Portland צמנט</span>
+                        <span className="text-sm font-bold text-amber-500 font-mono">{reportCementBags} שק</span>
+                        <span className="block text-[8px] text-amber-500/80 font-bold mt-1">⚠️ נמוך מלאי</span>
+                      </div>
+                      <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800 text-center">
+                        <span className="text-[9px] text-zinc-500 block">חול מחצבה</span>
+                        <span className="text-sm font-bold text-emerald-400 font-mono">{reportSandCubic} קוב</span>
+                        <span className="block text-[8px] text-emerald-500/80 font-bold mt-1">✓ תקין שטח</span>
+                      </div>
+                    </div>
+
+                    {/* Status selection indicator */}
+                    <div className="flex justify-between items-center bg-zinc-950 p-2.5 rounded-lg border border-zinc-800">
+                      <span className="text-zinc-400 text-[10px]">סטטוס אישור הבוס ראמי:</span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        reportStatus === "approved" 
+                          ? "bg-emerald-950 text-emerald-400 border border-emerald-500/30" 
+                          : "bg-red-950 text-red-400 border border-red-500/30"
+                      }`}>
+                        {reportStatus === "approved" ? "✓ מאושר סופית" : "⚠️ טיוטה / בהמתנה"}
+                      </span>
+                    </div>
+
+                    {/* Report Text / Free notes */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-zinc-500 block">הערות לוגיסטיקה (נועה):</span>
+                      <p className="bg-zinc-950 p-2.5 rounded-lg border border-zinc-800 text-zinc-300 italic text-[11px] leading-relaxed">
+                        {reportNotes}
+                      </p>
+                    </div>
+
+                    {/* Official signature requirement */}
+                    <div className="pt-2 border-t border-zinc-800 flex justify-between items-center text-[10px] text-zinc-500">
+                      <span>חתימה דיגיטלית: <strong className="text-emerald-400">באדיבות נועה ❤️</strong></span>
+                      <span className="font-mono">ח.סבן חומרי בניין בע"מ</span>
+                    </div>
+                  </div>
+
+                  {/* Interactive editor inputs for Rami below report */}
+                  <div className="bg-zinc-900/60 p-4 rounded-xl border border-zinc-800 space-y-3">
+                    <h4 className="text-xs font-bold text-[#d4af37]">עדכן נתוני דוח הבוקר:</h4>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] text-zinc-400 mb-1">ברזל בניין (טון):</label>
+                        <input
+                          type="text"
+                          value={reportIronTons}
+                          onChange={(e) => setReportIronTons(e.target.value)}
+                          className="w-full text-xs bg-zinc-950 text-white border border-zinc-800 rounded p-1.5 text-center"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-zinc-400 mb-1">צמנט פורטלנד (שקים):</label>
+                        <input
+                          type="text"
+                          value={reportCementBags}
+                          onChange={(e) => setReportCementBags(e.target.value)}
+                          className="w-full text-xs bg-zinc-950 text-white border border-zinc-800 rounded p-1.5 text-center"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-zinc-400 mb-1">הערות דוח לוגיסטי:</label>
+                      <textarea
+                        value={reportNotes}
+                        onChange={(e) => setReportNotes(e.target.value)}
+                        rows={2}
+                        className="w-full text-xs bg-zinc-950 text-white border border-zinc-800 rounded p-2 text-right text-zinc-200"
+                        dir="rtl"
+                      />
+                    </div>
+
+                    <div className="flex gap-2.5 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReportStatus("approved");
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              id: Date.now().toString(),
+                              sender: "user",
+                              text: `אני מאשר ומפרסם דוח בוקר תפעולי לתאריך ${reportDate}!`,
+                              time: new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }),
+                            },
+                            {
+                              id: (Date.now() + 1).toString(),
+                              sender: "noa",
+                              text: `אחי ושותפי! דוח הבוקר התפעולי אושר ונשמר בהצלחה. 
+                              המצב מעודכן: **${reportIronTons} טון ברזל** וגו'. 
+                              נאחל יום מוצלח ומלא עסקאות! באדיבות נועה ❤️`,
+                              time: new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }),
+                            },
+                          ]);
+                          alert("דוח הבוקר נקלט, אושר והופץ בהצלחה!");
+                        }}
+                        className="flex-1 py-2 bg-[#d4af37] text-black font-extrabold text-xs rounded-lg hover:bg-yellow-500 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>אשר והפץ דוח בוקר ✅</span>
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* DISPLAY MODE 3: DEFAULT CHAT INFO & LIVE WAREHOUSE STATE */}
+              {workMode === "chat" && (
+                <div className="space-y-4">
+                  
+                  {/* Live Dictionary of Noa's Protocol */}
+                  <div className="bg-[#111] p-3 rounded-xl border border-zinc-900 space-y-2.5">
+                    <h3 className="text-xs font-bold text-[#d4af37] border-b border-zinc-800 pb-2">
+                       מילון האימוג'ים המאושר של נועה
+                    </h3>
+                    <div className="space-y-2">
+                      {dictionaryItems.map((item, id) => (
+                        <div key={id} className="flex justify-between items-center text-xs text-zinc-300">
+                          <span className="font-semibold text-slate-100 flex items-center gap-2">
+                            <span className="text-base">{item.emoji}</span>
+                            <span>{item.key} = {item.val}</span>
+                          </span>
+                          <span className="text-[10px] text-zinc-500">{item.desc}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Active shipments */}
+                  <div className="bg-[#111] p-3 rounded-xl border border-zinc-900 space-y-2.5">
+                    <h3 className="text-xs font-bold text-emerald-400 border-b border-zinc-800 pb-2 flex items-center justify-between">
+                      <span>משאיות הובלה פעילות 🚛</span>
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 gold-pulse"></span>
+                    </h3>
+                    
+                    <div className="space-y-2 text-xs">
+                      <div className="p-2 bg-zinc-950 rounded border border-zinc-900-30 hover:border-emerald-600/30 transition-all">
+                        <div className="flex justify-between font-bold text-[#d4af37]">
+                          <span>משאית פריקה 14-304-20</span>
+                          <span>בדרך 🚛</span>
+                        </div>
+                        <p className="text-[10px] text-zinc-400 mt-1">
+                          מטען: 25 טון צמנט פורטלנד לחרש 🏭. הגעה צפויה עוד 15 דקות.
+                        </p>
+                      </div>
+
+                      <div className="p-2 bg-zinc-950 rounded border border-zinc-900 focus:outline-none">
+                        <div className="flex justify-between font-bold text-slate-300">
+                          <span>מנוף חכמת 🏗️ 99-102-30</span>
+                          <span>מתואם למחר</span>
+                        </div>
+                        <p className="text-[10px] text-zinc-500 mt-1">
+                          פריקה מתוכננת של ברזל בניין 12 מ"מ מהתלמיד 📦 לקו השטח.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Direct interactive Warehouse status editor */}
+                  <div className="bg-zinc-900/40 p-3.5 rounded-xl border border-zinc-800 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-xs font-bold text-[#d4af37]">מצב מלאי מעודכן לפי סניפים</h4>
+                      <span className="text-[9px] text-zinc-500">עריכה מהירה</span>
+                    </div>
+
+                    <div className="space-y-2">
+                      {inventory.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex justify-between items-center bg-zinc-950 p-2 rounded border border-zinc-900 text-xs"
+                        >
+                          <div className="text-right">
+                            <span className="font-bold block text-zinc-200">{item.name}</span>
+                            <span className="text-[9px] text-zinc-500">מחסן: {item.warehouse}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono bg-zinc-900 px-2 py-0.5 rounded text-[10px] text-slate-300">
+                              {item.quantity}
+                            </span>
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                              item.status === "תקין" 
+                                ? "bg-emerald-950 text-emerald-400" 
+                                : item.status === "נמוך" 
+                                ? "bg-amber-950 text-amber-400" 
+                                : "bg-red-950 text-red-400"
+                            }`}>
+                              {item.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+            </div>
+
+            {/* Canvas Bottom footer */}
+            <div className="p-4 bg-zinc-950 border-t border-zinc-900 space-y-2.5">
+              <div className="flex justify-between items-center text-xs text-zinc-400">
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  סטטוס אבטחת מנהלים:
+                </span>
+                <span className="font-bold text-emerald-400">מחובר ישירות (SSL)</span>
+              </div>
+              <p className="text-[10px] text-zinc-500 text-center leading-relaxed">
+                ממשק מאושר ומנוהל על ידי ראמי סבן 👑. כל תקשורת ואישור דוח עוברים הצפנת ערוץ מאובטח.
+              </p>
+            </div>
+          </aside>
+
+        </div>
+
+        {/* Global corporate footer */}
+        <footer className="mt-4 px-4 py-3 bg-[#050505] border border-zinc-900 rounded-xl flex flex-col md:flex-row justify-between items-center gap-2.5 text-xs text-zinc-500">
+          <div className="flex items-center gap-1">
+            <span>מערכת ניהול תפעול ח. סבן חומרי בניין בע"מ. כל הזכויות שמורות &copy; 2026</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-[#d4af37] font-bold">באדיבות נועה ❤️</span>
+            <span className="text-zinc-700">|</span>
+            <span className="text-emerald-500/80">תמיכת RTL מוחלטת ומעוצבת</span>
+          </div>
+        </footer>
+
+      </div>
+    </div>
+  );
+}

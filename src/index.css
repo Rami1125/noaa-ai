@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Assistant", "Rubik", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Rubik", "Assistant", sans-serif;
+}
+
+/* Custom continuous glowing animation */
+@keyframes goldPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.gold-pulse {
+  animation: goldPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  background-color: #0c0f12;
+  color: #f3f4f6;
+  direction: rtl; /* Build for strict Hebrew RTL support */
+}

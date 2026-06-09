@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { RamiSabanLogo } from "./components/RamiSabanLogo";
+import { WhatsAppShareButton } from "./components/WhatsAppShareButton";
 import {
   Send,
   Trash2,
@@ -45,14 +46,6 @@ interface Message {
   isHtml?: boolean; // Support HTML style output directly
 }
 
-interface InventoryItem {
-  id: string;
-  name: string;
-  quantity: string;
-  status: "תקין" | "נמוך" | "חסר";
-  warehouse: "החרש" | "התלמיד";
-}
-
 const parseWhatsAppTextToHtml = (text: string) => {
   if (!text) return "";
   let formatted = text
@@ -90,48 +83,48 @@ export default function App() {
       {
         id: "1",
         sender: "noa",
-        text: "אהובי ושותפי! המשאית 🚛 כבר בדרך לחרש 🏭. סגרתי את ההזמנה של הבלוקים מול הספק. הכל בשליטה, אל תדאג. צריכים משהו מיוחד לתלמיד 📦 היום?",
+        text: "אהובי ושותפי! המשאית 🚛 כבר בדרך לחרש 🏭. סגרתי את פקודת השינוע מול הנהג עלי. הכל בשליטה, אל תדאג. צריכים משהו מיוחד לתלמיד 📦 היום?",
         time: "08:15",
       },
       {
         id: "2",
         sender: "user",
-        text: "מה המצב בתלמיד 📦? חסר לנו ברזל לבנייה?",
+        text: "מה הלו\"ז להיום באתרי העבודה?",
         time: "08:16",
       },
       {
         id: "3",
         sender: "noa",
-        text: `אחי ושותפי! הנה מצב המלאי המעודכן בתלמיד 📦:
+        text: `אחי ושותפי! הנה לוח הזמנים וההיערכות הלוגיסטית להיום:
         <div class="my-3 overflow-x-auto border border-emerald-500/30 rounded-lg bg-emerald-950/20 p-2 text-right">
           <table class="w-full text-xs">
             <thead>
               <tr class="border-b border-emerald-500/20 text-emerald-400 font-bold">
-                <th class="p-1 pb-2">חומר</th>
-                <th class="p-1 pb-2 text-center">כמות</th>
+                <th class="p-1 pb-2">משימה / פעילות</th>
+                <th class="p-1 pb-2 text-center">זמן משוער</th>
                 <th class="p-1 pb-2 text-left">סטטוס</th>
               </tr>
             </thead>
             <tbody>
               <tr class="border-b border-white/5">
-                <td class="p-1.5 font-bold">ברזל בניין 12"מ</td>
-                <td class="p-1.5 text-center font-mono">14 טון</td>
-                <td class="p-1.5 text-left text-emerald-400 font-bold">✅ תקין</td>
+                <td class="p-1.5 font-bold">משאית עלי 🚛 פריקת קסטל</td>
+                <td class="p-1.5 text-center font-mono">11:30</td>
+                <td class="p-1.5 text-left text-emerald-400 font-bold">✅ בתנועה</td>
               </tr>
               <tr class="border-b border-white/5">
-                <td class="p-1.5 font-bold">צמנט פורטלנד</td>
-                <td class="p-1.5 text-center font-mono">250 שק</td>
-                <td class="p-1.5 text-left text-amber-400 font-bold">⚠️ נמוך</td>
+                <td class="p-1.5 font-bold">מנוף חכמת 🏗️ מיקום בחרש</td>
+                <td class="p-1.5 text-center font-mono">מיידי</td>
+                <td class="p-1.5 text-left text-emerald-400 font-bold">✅ בוצע</td>
               </tr>
               <tr>
-                <td class="p-1.5 font-bold">חול מחצבה</td>
-                <td class="p-1.5 text-center font-mono">40 קוב</td>
-                <td class="p-1.5 text-left text-emerald-400 font-bold">✅ תקין</td>
+                <td class="p-1.5 font-bold">שילוח מותג מזון 'Fast & Fresh'</td>
+                <td class="p-1.5 text-center font-mono">13:00</td>
+                <td class="p-1.5 text-left text-amber-400 font-bold">⏳ בהכנה</td>
               </tr>
             </tbody>
           </table>
         </div>
-        חכמת 🏗️ בתיאום למחר בבוקר. להוציא הזמנה לצמנט לפנות בוקר מהמחסן הראשי?`,
+        המנוף מתואם וערוך לעבודה בשטח. להוציא את הנחיות השינוע לקבוצת הנהגים?`,
         time: "08:17",
         isHtml: true,
       },
@@ -181,9 +174,6 @@ export default function App() {
 
   // Simulated Morning Report state for editing before preview
   const [reportDate, setReportDate] = useState("2026-06-09");
-  const [reportIronTons, setReportIronTons] = useState("14.0");
-  const [reportCementBags, setReportCementBags] = useState("250");
-  const [reportSandCubic, setReportSandCubic] = useState("45.0");
   const [reportStatus, setReportStatus] = useState("approved"); // approved, draft, pending
   const [reportNotes, setReportNotes] = useState("משאיות עלי 🚛 בתיאום שוטף. מנופי חכמת 🏗️ הוזמנו לקו האתר הראשי.");
 
@@ -199,15 +189,26 @@ export default function App() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
-  // Live warehouse state
-  const [inventory, setInventory] = useState<InventoryItem[]>([
-    { id: "i1", name: 'ברזל בניין 12"מ', quantity: "14 טון", status: "תקין", warehouse: "התלמיד" },
-    { id: "i2", name: "צמנט פורטלנד שק 50 ק\"ג", quantity: "250 שק", status: "נמוך", warehouse: "התלמיד" },
-    { id: "i3", name: "חול מחצבה שטוף", quantity: "40 קוב", status: "תקין", warehouse: "התלמיד" },
-    { id: "i4", name: "בלוק איטונג 20", quantity: "1,200 יחידות", status: "תקין", warehouse: "החרש" },
-    { id: "i5", name: "טיח גבס מהיר", quantity: "15 שקים", status: "חסר", warehouse: "החרש" },
-    { id: "i6", name: "חצץ סומסום", quantity: "85 קוב", status: "תקין", warehouse: "החרש" },
-  ]);
+  const playClickSound = () => {
+    try {
+      const audio = new Audio("/click.mp3");
+      audio.play().catch((err) => {
+        console.warn("Autoplay or decoding prevented immediately playing click sound:", err);
+      });
+    } catch (error) {
+      console.error("Failed to play sound:", error);
+    }
+  };
+
+  // Trigger sound when Noa generates a response
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg && lastMsg.sender === "noa") {
+        playClickSound();
+      }
+    }
+  }, [messages]);
 
   // Dictionary definitions
   const dictionaryItems = [
@@ -438,14 +439,14 @@ export default function App() {
   };
 
   // Pre-seed some WhatsApp text suggestions
-  const updateWhatsappTextTemplate = (type: "supply" | "delay" | "cement") => {
+  const updateWhatsappTextTemplate = (type: "supply" | "delay" | "coordination") => {
     setIsWhatsappSent(false);
     if (type === "supply") {
       setWhatsappText("עלי! 🚛 משאית של ח.סבן יוצאת כעת מהחרש 🏭 לדרך. אספקה מתוכננת בתוך חצי שעה אצלכם בשטח. באדיבות נועה ❤️");
     } else if (type === "delay") {
       setWhatsappText("אהובי ושותפי! יש עיכוב קטן בגלל חכמת 🏗️ המנוף הראשי. צפי פריקה מעודכן בשעה 12:30. באדיבות נועה ❤️");
     } else {
-      setWhatsappText("מצב המלאי בתלמיד 📦 מעודכן: 14 טון ברזל תקין, 250 שקים של צמנט תלויים. חסר לנו טיח מהיר 🏭. באדיבות נועה ❤️");
+      setWhatsappText("עליכם לעדכן מיידית את חמ\"ל החרש 🏭 על הגעתכם לשטח. שחכמת 🏗️ ימתין לכם בשער המחסן המשני. באדיבות נועה ❤️");
     }
   };
 
@@ -688,10 +689,11 @@ export default function App() {
                             <div className="mt-3.5 pt-2.5 border-t border-white/5 flex flex-wrap gap-2 justify-end">
                               <button
                                 onClick={() => loadMessageToWhatsApp(msg.text)}
-                                className="px-2.5 py-1 rounded bg-[#075e54]/30 hover:bg-[#075e54]/75 text-emerald-400 hover:text-white transition-colors text-[10px] font-bold flex items-center gap-1 border border-[#075e54]/40"
+                                className="px-2.5 py-1 rounded bg-[#075e54]/30 hover:bg-[#075e54]/75 text-emerald-400 hover:text-white transition-colors text-[10px] font-bold flex items-center gap-1 border border-[#075e54]/40 cursor-pointer"
                               >
                                 <span>📱 הדמיית WhatsApp</span>
                               </button>
+                              <WhatsAppShareButton messageText={msg.text} />
                               <button
                                 onClick={() => {
                                   // Auto parse metrics from message if possible or set custom values, then switch to report mode
@@ -752,10 +754,10 @@ export default function App() {
                 שאל מהר:
               </span>
               <button
-                onClick={() => handleSendMessage("נועה, הציגי דוח מלאי קצר על הברזל והחול")}
+                onClick={() => handleSendMessage("נועה, הציגי את תוכנית סידורי העבודה ומשאיות להיום")}
                 className="px-3 py-1 bg-zinc-900 rounded-full text-xs text-zinc-300 hover:text-white hover:bg-[#064e3b]/40 border border-zinc-800 transition-colors pointer"
               >
-                📊 קבל דוח מלאי
+                📊 סידור העבודה להיום
               </button>
               <button
                 onClick={() => handleSendMessage("האם המשאית 🚛 כבר יצאה לחרש?")}
@@ -764,10 +766,10 @@ export default function App() {
                 🚛 בדוק סטטוס משאית
               </button>
               <button
-                onClick={() => handleSendMessage("תוציאי הזמנה של 500 שק צמנט דחוף")}
+                onClick={() => handleSendMessage("תוציאי הנחיה של תיאום שטח דחוף לנהגים")}
                 className="px-3 py-1 bg-zinc-900 rounded-full text-xs text-zinc-300 hover:text-white hover:bg-[#064e3b]/40 border border-zinc-800 transition-colors pointer"
               >
-                📦 הזמן צמנט
+                📦 תיאום נהגים בשטח
               </button>
             </div>
 
@@ -947,10 +949,10 @@ export default function App() {
                         ⚠️ הודעת עיכוב מנוף
                       </button>
                       <button
-                        onClick={() => updateWhatsappTextTemplate("cement")}
+                        onClick={() => updateWhatsappTextTemplate("coordination")}
                         className="px-2 py-1 text-[10px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded text-slate-200 cursor-pointer transition-colors"
                       >
-                        📦 דוח מלאי קצר
+                        📋 הנחיית תיאום שטח
                       </button>
                     </div>
 
@@ -1222,6 +1224,7 @@ export default function App() {
                           <Check className="w-4 h-4 text-black" />
                           <span>אשר ושגר ל-WhatsApp ✅</span>
                         </button>
+                        <WhatsAppShareButton messageText={whatsappText} />
                       </div>
 
                       {isWhatsappSent && (
@@ -1267,22 +1270,17 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Stock summaries */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800 text-center">
-                        <span className="text-[9px] text-zinc-500 block">ברזל בניין</span>
-                        <span className="text-sm font-bold text-emerald-400 font-mono">{reportIronTons} טון</span>
-                        <span className="block text-[8px] text-emerald-500/80 font-bold mt-1">✓ תקין תלמיד</span>
+                    {/* Logistical progress overview (No stock/inventory calculations) */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-zinc-950 p-2.5 rounded-lg border border-zinc-900 text-center">
+                        <span className="text-[9px] text-zinc-500 block">סניפים פעילים</span>
+                        <span className="text-xs font-bold text-emerald-400">החרש 🏭 &amp; התלמיד 📦</span>
+                        <span className="block text-[8px] text-emerald-500/80 font-bold mt-1">✓ סנכרון תפעולי תקין</span>
                       </div>
-                      <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800 text-center">
-                        <span className="text-[9px] text-zinc-500 block">Portland צמנט</span>
-                        <span className="text-sm font-bold text-amber-500 font-mono">{reportCementBags} שק</span>
-                        <span className="block text-[8px] text-amber-500/80 font-bold mt-1">⚠️ נמוך מלאי</span>
-                      </div>
-                      <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800 text-center">
-                        <span className="text-[9px] text-zinc-500 block">חול מחצבה</span>
-                        <span className="text-sm font-bold text-emerald-400 font-mono">{reportSandCubic} קוב</span>
-                        <span className="block text-[8px] text-emerald-500/80 font-bold mt-1">✓ תקין שטח</span>
+                      <div className="bg-zinc-950 p-2.5 rounded-lg border border-zinc-900 text-center">
+                        <span className="text-[9px] text-zinc-500 block">תיאום שטח</span>
+                        <span className="text-xs font-bold text-emerald-400">משאיות עלי 🚛</span>
+                        <span className="block text-[8px] text-emerald-500/80 font-bold mt-1">✓ נהגים בדרכים בטוחות</span>
                       </div>
                     </div>
 
@@ -1317,22 +1315,13 @@ export default function App() {
                   <div className="bg-zinc-900/60 p-4 rounded-xl border border-zinc-800 space-y-3">
                     <h4 className="text-xs font-bold text-[#d4af37]">עדכן נתוני דוח הבוקר:</h4>
                     
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 gap-2">
                       <div>
-                        <label className="block text-[10px] text-zinc-400 mb-1">ברזל בניין (טון):</label>
+                        <label className="block text-[10px] text-zinc-400 mb-1">תאריך הוצאת הדוח:</label>
                         <input
-                          type="text"
-                          value={reportIronTons}
-                          onChange={(e) => setReportIronTons(e.target.value)}
-                          className="w-full text-xs bg-zinc-950 text-white border border-zinc-800 rounded p-1.5 text-center"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] text-zinc-400 mb-1">צמנט פורטלנד (שקים):</label>
-                        <input
-                          type="text"
-                          value={reportCementBags}
-                          onChange={(e) => setReportCementBags(e.target.value)}
+                          type="date"
+                          value={reportDate}
+                          onChange={(e) => setReportDate(e.target.value)}
                           className="w-full text-xs bg-zinc-950 text-white border border-zinc-800 rounded p-1.5 text-center"
                         />
                       </div>
@@ -1365,13 +1354,10 @@ export default function App() {
                             {
                               id: (Date.now() + 1).toString(),
                               sender: "noa",
-                              text: `אחי ושותפי! דוח הבוקר התפעולי אושר ונשמר בהצלחה. 
-                              המצב מעודכן: **${reportIronTons} טון ברזל** וגו'. 
-                              נאחל יום מוצלח ומלא עסקאות! באדיבות נועה ❤️`,
+                              text: `אחי ושותפי! דוח הבוקר הלוגיסטי לתאריך ${reportDate} אושר ונשמר בהצלחה. סידור העבודה עודכן מערכתית למשאיות ומנופים! נאחל יום מוצלח ומלא עסקאות! באדיבות נועה ❤️`,
                               time: new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }),
                             },
                           ]);
-                          alert("דוח הבוקר נקלט, אושר והופץ בהצלחה!");
                         }}
                         className="flex-1 py-2 bg-[#d4af37] text-black font-extrabold text-xs rounded-lg hover:bg-yellow-500 transition-colors flex items-center justify-center gap-1 cursor-pointer"
                       >
@@ -1420,7 +1406,7 @@ export default function App() {
                           <span>בדרך 🚛</span>
                         </div>
                         <p className="text-[10px] text-zinc-400 mt-1">
-                          מטען: 25 טון צמנט פורטלנד לחרש 🏭. הגעה צפויה עוד 15 דקות.
+                          מטען: אספקת ציוד וחומרי בניין לחרש 🏭. הגעה צפויה עוד 15 דקות.
                         </p>
                       </div>
 
@@ -1430,45 +1416,32 @@ export default function App() {
                           <span>מתואם למחר</span>
                         </div>
                         <p className="text-[10px] text-zinc-500 mt-1">
-                          פריקה מתוכננת של ברזל בניין 12 מ"מ מהתלמיד 📦 לקו השטח.
+                          תיאום מפעיל מנוף פריקה מהתלמיד 📦 לקו השטח.
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Direct interactive Warehouse status editor */}
-                  <div className="bg-zinc-900/40 p-3.5 rounded-xl border border-zinc-800 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <h4 className="text-xs font-bold text-[#d4af37]">מצב מלאי מעודכן לפי סניפים</h4>
-                      <span className="text-[9px] text-zinc-500">עריכה מהירה</span>
-                    </div>
-
-                    <div className="space-y-2">
-                      {inventory.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex justify-between items-center bg-zinc-950 p-2 rounded border border-zinc-900 text-xs"
-                        >
-                          <div className="text-right">
-                            <span className="font-bold block text-zinc-200">{item.name}</span>
-                            <span className="text-[9px] text-zinc-500">מחסן: {item.warehouse}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono bg-zinc-900 px-2 py-0.5 rounded text-[10px] text-slate-300">
-                              {item.quantity}
-                            </span>
-                            <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                              item.status === "תקין" 
-                                ? "bg-emerald-950 text-emerald-400" 
-                                : item.status === "נמוך" 
-                                ? "bg-amber-950 text-amber-400" 
-                                : "bg-red-950 text-red-400"
-                            }`}>
-                              {item.status}
-                            </span>
-                          </div>
+                  {/* Crew & Driver Contacts Table */}
+                  <div className="bg-[#111] p-3 rounded-xl border border-zinc-900 space-y-2.5">
+                    <h3 className="text-xs font-bold text-[#d4af37] border-b border-zinc-800 pb-2">
+                      אנשי צוות ונהגים פעילים 👷‍♂️
+                    </h3>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between items-center p-2 bg-zinc-950 rounded border border-zinc-900">
+                        <div>
+                          <span className="font-bold text-zinc-200 block">אבו עלי</span>
+                          <span className="text-[9px] text-zinc-400">נהג משאית 🚛 (עלי 1)</span>
                         </div>
-                      ))}
+                        <span className="text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded text-[10px] font-bold">זמין בנייד</span>
+                      </div>
+                      <div className="flex justify-between items-center p-2 bg-zinc-950 rounded border border-zinc-900">
+                        <div>
+                          <span className="font-bold text-zinc-200 block">חכמת אל-מנוף</span>
+                          <span className="text-[9px] text-zinc-400">מפעיל מנוף 🏗️ (חכמת)</span>
+                        </div>
+                        <span className="text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded text-[10px] font-bold">באתר החרש</span>
+                      </div>
                     </div>
                   </div>
 

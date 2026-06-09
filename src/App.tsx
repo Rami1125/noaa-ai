@@ -52,6 +52,25 @@ interface InventoryItem {
   warehouse: "החרש" | "התלמיד";
 }
 
+const parseWhatsAppTextToHtml = (text: string) => {
+  if (!text) return "";
+  let formatted = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  
+  // Replace *text* with bold
+  formatted = formatted.replace(/\*(.*?)\*/g, '<strong class="text-emerald-300 font-extrabold">$1</strong>');
+  // Replace _text_ with italic
+  formatted = formatted.replace(/_(.*?)_/g, '<em class="italic text-teal-200">$1</em>');
+  // Replace ~text~ with strike
+  formatted = formatted.replace(/~(.*?)~/g, '<span class="line-through text-zinc-500">$1</span>');
+  // Replace `text` with inline code
+  formatted = formatted.replace(/`(.*?)`/g, '<code class="bg-black/50 text-emerald-300 px-1 rounded font-mono text-[11px] border border-emerald-500/20">$1</code>');
+  
+  return formatted.replace(/\n/g, "<br/>");
+};
+
 export default function App() {
   // Current operating mode requested by the user: "chat" | "whatsapp" | "report"
   const [workMode, setWorkMode] = useState<"chat" | "whatsapp" | "report">("chat");
@@ -128,6 +147,36 @@ export default function App() {
   );
   const [whatsappRecipient, setWhatsappRecipient] = useState("קבוצת הנהגים - ח. סבן");
   const [isWhatsappSent, setIsWhatsappSent] = useState(false);
+
+  // High fidelity audio voice note simulation state
+  const [isVoicePlaying, setIsVoicePlaying] = useState(false);
+  const [voicePlaybackPercent, setVoicePlaybackPercent] = useState(0);
+  const voiceTimerRef = useRef<any>(null);
+
+  // Playback timer effect for audio memo simulation
+  useEffect(() => {
+    if (isVoicePlaying) {
+      voiceTimerRef.current = setInterval(() => {
+        setVoicePlaybackPercent((prev) => {
+          if (prev >= 100) {
+            setIsVoicePlaying(false);
+            clearInterval(voiceTimerRef.current);
+            return 0;
+          }
+          return prev + 4;
+        });
+      }, 150);
+    } else {
+      if (voiceTimerRef.current) {
+        clearInterval(voiceTimerRef.current);
+      }
+    }
+    return () => {
+      if (voiceTimerRef.current) {
+        clearInterval(voiceTimerRef.current);
+      }
+    };
+  }, [isVoicePlaying]);
 
   // Simulated Morning Report state for editing before preview
   const [reportDate, setReportDate] = useState("2026-06-09");
@@ -414,7 +463,7 @@ export default function App() {
             {/* Interactive Portrait of Noa */}
             <div className="relative shrink-0">
               <img
-                src="https://i.postimg.cc/dVdCQ7DJ/Whats-App-Image-2026-05-01-at-12-25-35-PM-(5).jpg"
+                src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150&h=150"
                 alt="נועה סבן"
                 className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.35)]"
                 referrerPolicy="no-referrer"
@@ -490,7 +539,7 @@ export default function App() {
             
             <div className="relative shrink-0">
               <img
-                src="https://i.postimg.cc/m2pj1FbT/logo-rami.png"
+                src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=150&h=150"
                 alt="ראמי סבן"
                 className="w-10 h-10 rounded-full object-cover border-2 border-[#d4af37] shadow-[0_0_8px_rgba(212,175,55,0.2)]"
                 referrerPolicy="no-referrer"
@@ -756,176 +805,421 @@ export default function App() {
             <div className="flex-1 p-4 overflow-y-auto space-y-4">
               
               {/* DISPLAY MODE 1: WHATSAPP STREAM SIMULATOR (הדמיית WhatsApp) */}
-              {workMode === "whatsapp" && (
-                <div className="space-y-4">
-                  
-                  {/* Mode switcher info */}
-                  <div className="bg-[#0c2017] border border-emerald-500/20 p-3 rounded-xl">
-                    <h3 className="text-xs font-bold text-emerald-400 mb-1">
-                      הדמיית דראפט של WhatsApp
-                    </h3>
-                    <p className="text-[11px] text-zinc-300 leading-relaxed">
-                      ראמי, כאן נועה מעדכנת את הודעת ה-WhatsApp לפני הפצה לקבוצת הנהגים או הספקים. ערוך את הנוסח ואשר שליחה.
-                    </p>
-                  </div>
+              {workMode === "whatsapp" && (() => {
+                // Dynamic simulated team history for each chosen target
+                const getSimulatedHistory = (recipient: string) => {
+                  if (recipient.includes("הנהגים")) {
+                    return [
+                      { sender: "עלי סבן 🚛", text: "בוקר טוב נועה, פקח עושה בעיות בכניסה לחרש... צריכים עזרה עם תעודת משלוח", time: "08:12", isNoa: false },
+                      { sender: "נועה סבן ❤️", text: "עלי היקר, אל תדאג. דיברתי עם שומר שער ב', תתקדם אליו ישירות. ראמי אהובי מעדכן את הפקודות כרגע.", time: "08:14", isNoa: true },
+                    ];
+                  } else if (recipient.includes("ספקים")) {
+                    return [
+                      { sender: "גבריאל (החרש) 🏭", text: "שלום נועה, האם שחררתם את התשלום המאושר עבור הברזל?", time: "08:05", isNoa: false },
+                      { sender: "נועה סבן ❤️", text: "גבריאל יקר, תזרים המזומנים מאושר! ראמי הבוס חתם על זה הרגע דיגיטלית.", time: "08:08", isNoa: true },
+                    ];
+                  } else if (recipient.includes("מנהלי עבודה")) {
+                    return [
+                      { sender: "אבו חאלד 🏗️", text: "נועה, המנוף ממוקם באתר קסטל אבל הנהג חמדאן עוד לא יצר קשר", time: "08:01", isNoa: false },
+                      { sender: "נועה סבן ❤️", text: "קיבלתי אבו חאלד יקר. יוצרת קשר עם הנהג כעת, תתחילו להתפרס בשטח, הכל מסונכרן.", time: "08:04", isNoa: true },
+                    ];
+                  } else {
+                    return [
+                      { sender: "ראמי סבן 👑", text: "נועה, ההפצה של חומרי הבניין מוכנה?", time: "07:55", isNoa: false },
+                      { sender: "נועה סבן ❤️", text: "בטח אהובי היקר! רק תציץ בטיוטה הזו ותן לי אישור לשחרר.", time: "07:56", isNoa: true },
+                    ];
+                  }
+                };
 
-                  {/* Template quick selects */}
-                  <div className="flex flex-wrap gap-1.5 justify-end">
-                    <span className="text-[10px] text-zinc-500 self-center">נוסחים מהירים:</span>
-                    <button
-                      onClick={() => updateWhatsappTextTemplate("supply")}
-                      className="px-2 py-1 text-[10px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded text-slate-200"
-                    >
-                      🚛 דיווח אספקה
-                    </button>
-                    <button
-                      onClick={() => updateWhatsappTextTemplate("delay")}
-                      className="px-2 py-1 text-[10px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded text-slate-200"
-                    >
-                      ⚠️ הודעת עיכוב מנוף
-                    </button>
-                    <button
-                      onClick={() => updateWhatsappTextTemplate("cement")}
-                      className="px-2 py-1 text-[10px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded text-slate-200"
-                    >
-                      📦 דוח מלאי קצר
-                    </button>
-                  </div>
+                const simulatedHistory = getSimulatedHistory(whatsappRecipient);
 
-                  {/* High Fidelity WhatsApp Simulator Phone Container */}
-                  <div className="mx-auto max-w-[320px] rounded-[36px] bg-zinc-900 border-4 border-zinc-800 shadow-2xl relative overflow-hidden flex flex-col min-h-[440px]">
-                    <div className="absolute top-0 inset-x-0 h-4 bg-zinc-900 flex justify-between items-center px-6 text-[8px] text-zinc-400 font-mono z-30">
-                      <span>08:18</span>
-                      {/* Speaker notch */}
-                      <span className="w-12 h-3 bg-zinc-900 rounded-b-lg absolute top-0 left-1/2 transform -translate-x-1/2 z-40"></span>
-                      <span className="flex items-center gap-1">🔋 98% • 📶</span>
-                    </div>
+                // Live Audio Chime synthesizer for native user experience
+                const playBeep = () => {
+                  try {
+                    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.setValueAtTime(880, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.06, ctx.currentTime);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.12);
+                  } catch (e) {
+                    console.log("Audio feedback synthesis skipped until active interaction.");
+                  }
+                };
 
-                    {/* WhatsApp Top bar */}
-                    <div className="bg-[#075e54] pt-5 pb-2.5 px-3 flex items-center justify-between text-white z-20 shadow-md">
-                      <div className="flex items-center gap-2">
-                        <ArrowRight className="w-4 h-4" onClick={() => setWorkMode("chat")} />
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 border border-emerald-500 overflow-hidden shrink-0">
-                          <img
-                            src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100&h=100"
-                            alt="נועה"
-                            className="w-full h-full object-cover"
-                          />
+                return (
+                  <div className="space-y-4">
+                    
+                    {/* Mode switcher info */}
+                    <div className="bg-gradient-to-r from-[#064e3b]/35 to-zinc-900 border border-emerald-500/20 p-4 rounded-2xl shadow-lg">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-xs font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#25d366] animate-ping" />
+                            חמ"ל WhatsApp עצמאי - הדמיה ותיאום פעולות
+                          </h3>
+                          <p className="text-[11.5px] text-zinc-300 leading-relaxed font-sans text-right" dir="rtl">
+                            כאן נועה מנפיקה את ההודעה הרשמית של הנהלת <strong>"ח. סבן חומרי בניין"</strong>. 
+                            היא לעולם לא מפיצה הודעות ללא אישור והסכמה ממך הבוס, <strong>ראמי סבן 👑</strong>.
+                          </p>
                         </div>
-                        <div className="text-right">
-                          <div className="text-xs font-bold leading-tight">נועה ח. סבן 🟢</div>
-                          <span className="text-[8px] text-emerald-200 block">מחוברת כעת</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2.5 text-white/90">
-                        <Video className="w-3.5 h-3.5" />
-                        <PhoneCall className="w-3.5 h-3.5" />
-                        <MoreVertical className="w-3.5 h-3.5" />
-                      </div>
-                    </div>
-
-                    {/* Simulated Wallpaper background pattern */}
-                    <div className="flex-1 bg-[#0b141a]/95 p-3 flex flex-col justify-end relative h-[300px]">
-                      
-                      {/* Recipient Group Label Header bubble */}
-                      <div className="self-center bg-[#182229] border border-zinc-800 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded-md mb-4 text-center">
-                        הפצה אל: {whatsappRecipient}
-                      </div>
-
-                      {/* WhatsApp styled Message bubble */}
-                      <div className="bg-[#005c4b] text-white p-3 rounded-xl max-w-[90%] md:max-w-[85%] mr-auto rounded-tr-none text-right relative shadow-[0_2px_4px_rgba(0,0,0,0.15)] text-xs leading-relaxed space-y-1">
-                        {/* Name mark */}
-                        <div className="text-[#30d6b0] text-[9px] font-bold text-right mb-0.5">
-                          נועה סבן (רובוט תפעול)
-                        </div>
-                        
-                        {/* Styled contents */}
-                        <div className="whitespace-pre-wrap font-sans text-right">
-                          {whatsappText}
-                        </div>
-
-                        {/* Bottom Status Info */}
-                        <div className="flex items-center justify-end gap-1 text-[8px] text-white/50 text-left pt-1">
-                          <span>08:18</span>
-                          <CheckCheck className="w-3 h-3 text-[#53bdeb]" />
-                        </div>
+                        <span className="text-[9px] bg-[#25d366]/20 border border-[#25d366]/40 text-[#25d366] px-2 py-0.5 rounded font-black whitespace-nowrap self-start">
+                          SIM LIVE
+                        </span>
                       </div>
                     </div>
 
-                    {/* WhatsApp Bottom entry bar mock */}
-                    <div className="bg-[#1f2c34] p-2 flex items-center gap-1.5 border-t border-zinc-800 text-[11px]">
-                      <span className="text-emerald-500">📎</span>
-                      <div className="flex-1 bg-[#2a3942] rounded-full px-3 py-1 text-zinc-400 text-[10px] text-right">
-                        נוסח מיושר ונשלח לקבוצה
+                    {/* INTERACTIVE TAP SELECTION CHATS */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold block text-right">
+                        בחר חלון צ'אט פעיל להדמיה:
+                      </span>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                        {[
+                          { id: "הנהגים", name: "קבוצת הנהגים", recipient: "קבוצת הנהגים - ח. סבן", icon: "🚛" },
+                          { id: "ספקים", name: "ספקים ראשיים", recipient: "ספקים ראשיים (ברזל וצמנט)", icon: "🏭" },
+                          { id: "מנהלי", name: "מנהלי עבודה", recipient: "מנהלי עבודה באתרי בנייה", icon: "🏗️" },
+                          { id: "ראמי", name: "ראמי סבן (אישי)", recipient: "ראמי סבן - אישי 👑", icon: "👑" },
+                        ].map((grp) => {
+                          const isActive = whatsappRecipient === grp.recipient || (grp.id === "ראמי" && whatsappRecipient.includes("אישי"));
+                          return (
+                            <button
+                              key={grp.id}
+                              onClick={() => {
+                                setWhatsappRecipient(grp.recipient);
+                                setIsWhatsappSent(false);
+                                // Pre-fill context-friendly default messages
+                                if (grp.id === "הנהגים") {
+                                  setWhatsappText("שלום לכולם, באדיבות נועה ❤️\nמשאית 🚛 יוצאת כעת מהחרש 🏭 עם *500 שקים של צמנט* לכיוון אתרת קסטל. מנוף 🏗️ לספק תומך בשטח ב-11:00. נא להיערך לפריקה מיידית.");
+                                } else if (grp.id === "ספקים") {
+                                  setWhatsappText("בוקר טוב גבריאל, באדיבות נועה 🏭\nנא לאשר משיכה של *14 טון ברזל בניין* נוספים עבור אתר החרש. התשלום בוצע זה עתה על ידי ראמי סבן ומאושר במערכת.");
+                                } else if (grp.id === "מנהלי") {
+                                  setWhatsappText("עדכון סנכרון שטח, נועה מוסרת: נא להיערך להגעת משאיות המלט קרטל תוך כעשרים דקות. המנוף ממוקם תחת _ראפי מנהל שטח_.");
+                                } else {
+                                  setWhatsappText("ראמי אהובי, הכל תחת בקרה הדוקה. דוחות המלאי והמשלוחים סונכרנו. שיהיה לנו יום מבורך ורווחי! ❤️👑");
+                                }
+                              }}
+                              className={`p-2 rounded-xl text-center transition-all flex flex-col items-center justify-center border text-[11px] font-bold cursor-pointer ${
+                                isActive 
+                                  ? "bg-emerald-600/20 border-emerald-500 text-white shadow" 
+                                  : "bg-[#111111] border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900"
+                              }`}
+                            >
+                              <span className="text-sm mb-0.5">{grp.icon}</span>
+                              <span className="truncate w-full">{grp.name}</span>
+                            </button>
+                          );
+                        })}
                       </div>
-                      <span className="text-emerald-500">🎤</span>
-                    </div>
-                  </div>
-
-                  {/* Interactive editor inputs for Rami below preview */}
-                  <div className="bg-zinc-900/60 p-4 rounded-xl border border-zinc-800 space-y-3">
-                    <label className="block text-xs font-bold text-[#d4af37]">ערוך והתאם את נוסח ההודעה:</label>
-                    <textarea
-                      value={whatsappText}
-                      onChange={(e) => setWhatsappText(e.target.value)}
-                      rows={4}
-                      className="w-full text-xs bg-zinc-950 text-white border border-zinc-800 rounded-lg p-2.5 focus:outline-none focus:border-emerald-500 text-right font-sans"
-                      dir="rtl"
-                    />
-
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-300 mb-1">בחר קבוצת יעד להפצה:</label>
-                      <select
-                        value={whatsappRecipient}
-                        onChange={(e) => setWhatsappRecipient(e.target.value)}
-                        className="w-full text-xs bg-zinc-950 text-white border border-zinc-800 rounded-lg p-2 focus:outline-none text-right"
-                      >
-                        <option value="קבוצת הנהגים - ח. סבן">🚛 קבוצת הנהגים - ח. סבן</option>
-                        <option value="ספקים ראשיים (ברזל וצמנט)">🏭 ספקים ראשיים (ברזל וצמנט)</option>
-                        <option value="מנהלי עבודה באתרי בנייה">🏗️ מנהלי עבודה באתרי בנייה</option>
-                        <option value="ראמי סבן - אישי 👑">👑 ראמי סבן - אישי</option>
-                      </select>
                     </div>
 
-                    <div className="pt-2 flex gap-2">
+                    {/* Quick template triggers */}
+                    <div className="flex flex-wrap gap-1.5 justify-end">
+                      <span className="text-[10px] text-zinc-500 self-center">נוסחים מהירים:</span>
                       <button
-                        type="button"
-                        onClick={() => {
-                          setIsWhatsappSent(true);
-                          // Post to chat
-                          setMessages((prev) => [
-                            ...prev,
-                            {
-                              id: Date.now().toString(),
-                              sender: "user",
-                              text: `אני מאשר ומפיץ את ההודעה ל-${whatsappRecipient}!`,
-                              time: new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }),
-                            },
-                            {
-                              id: (Date.now() + 1).toString(),
-                              sender: "noa",
-                              text: `עלי! 🚛 ההפצה אל **${whatsappRecipient}** בוצעה בהצלחה מלאה. אין עליך אחי ושותפי! 👑`,
-                              time: new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }),
-                            },
-                          ]);
-                          alert(`הודעת ה-WhatsApp הופצה בהצלחה אל: ${whatsappRecipient}`);
-                        }}
-                        className="flex-1 py-2 rounded-lg bg-[#25d366] text-black font-extrabold text-xs hover:bg-[#20ba5a] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                        onClick={() => updateWhatsappTextTemplate("supply")}
+                        className="px-2 py-1 text-[10px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded text-slate-200 cursor-pointer transition-colors"
                       >
-                        <Check className="w-4 h-4 text-black" />
-                        <span>אשר ושגר ל-WhatsApp ✅</span>
+                        🚛 דיווח אספקה
+                      </button>
+                      <button
+                        onClick={() => updateWhatsappTextTemplate("delay")}
+                        className="px-2 py-1 text-[10px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded text-slate-200 cursor-pointer transition-colors"
+                      >
+                        ⚠️ הודעת עיכוב מנוף
+                      </button>
+                      <button
+                        onClick={() => updateWhatsappTextTemplate("cement")}
+                        className="px-2 py-1 text-[10px] bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded text-slate-200 cursor-pointer transition-colors"
+                      >
+                        📦 דוח מלאי קצר
                       </button>
                     </div>
 
-                    {isWhatsappSent && (
-                      <div className="bg-emerald-950/20 text-emerald-400 border border-emerald-500/30 p-2.5 rounded-lg text-center text-[11px] font-bold">
-                        ✓ הודעת ה-WhatsApp הופצה באופן סופי ואושרה על ידי ראמי סבן!
+                    {/* High Fidelity WhatsApp Simulator Phone Container */}
+                    <div className="mx-auto max-w-[320px] rounded-[36px] bg-zinc-950 border-4 border-zinc-800 shadow-2xl relative overflow-hidden flex flex-col min-h-[440px] border-emerald-950/20">
+                      <div className="absolute top-0 inset-x-0 h-4 bg-zinc-950 flex justify-between items-center px-6 text-[8px] text-zinc-400 font-mono z-30">
+                        <span>{new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}</span>
+                        {/* Speaker notch */}
+                        <span className="w-12 h-3 bg-zinc-950 rounded-b-lg absolute top-0 left-1/2 transform -translate-x-1/2 z-40"></span>
+                        <span className="flex items-center gap-1">🔋 98% • 📶</span>
                       </div>
-                    )}
-                  </div>
 
-                </div>
-              )}
+                      {/* WhatsApp Top bar */}
+                      <div className="bg-[#075e54] pt-5 pb-2.5 px-3 flex items-center justify-between text-white z-20 shadow-md">
+                        <div className="flex items-center gap-2">
+                          <ArrowRight className="w-4 h-4 cursor-pointer hover:text-emerald-300 transition-colors" onClick={() => setWorkMode("chat")} />
+                          <div className="w-8 h-8 rounded-full bg-zinc-800 border border-emerald-500 overflow-hidden shrink-0 relative">
+                            <img
+                              src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100&h=100"
+                              alt="נועה"
+                              className="w-full h-full object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                            <span className="w-2 h-2 rounded-full bg-emerald-450 absolute bottom-0 right-0 border border-emerald-800" />
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs font-bold leading-tight flex items-center gap-1 justify-end">
+                              נועה ח. סבן
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-450 animate-pulse" />
+                            </div>
+                            <span className="text-[8px] text-emerald-250 block">מחוברת כעת</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2.5 text-white/90">
+                          <Video className="w-3.5 h-3.5 hover:text-emerald-200 cursor-pointer" />
+                          <PhoneCall className="w-3.5 h-3.5 hover:text-emerald-200 cursor-pointer" />
+                          <MoreVertical className="w-3.5 h-3.5 hover:text-emerald-200 cursor-pointer" />
+                        </div>
+                      </div>
+
+                      {/* Simulated Wallpaper background pattern */}
+                      <div className="flex-1 bg-[#0b141a]/95 p-3 flex flex-col justify-end relative h-[300px] overflow-y-auto space-y-3">
+                        
+                        {/* Custom background pattern for WhatsApp feel */}
+                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(circle,rgba(255,255,255,0.15)_1.5px,transparent_1.5px)] bg-[length:14px_14px] z-0" />
+
+                        {/* Recipient Group Label Header bubble */}
+                        <div className="self-center bg-[#182229] border border-zinc-800/80 text-emerald-400 text-[9px] font-bold px-2 py-0.5 rounded-md mb-2 text-center z-10">
+                          הפצה אל: {whatsappRecipient}
+                        </div>
+
+                        {/* MOCK HISTORICAL CHAT FOR LIVE CONTEXT */}
+                        <div className="space-y-2 z-10 w-full">
+                          {simulatedHistory.map((m, index) => (
+                            <div 
+                              key={index} 
+                              className={`p-2 rounded-xl text-right text-[11px] leading-relaxed max-w-[85%] relative shadow-md ${
+                                m.isNoa 
+                                  ? "bg-[#202c33] text-[#e9edef] ml-auto rounded-tl-none border-l-2 border-emerald-500/40" 
+                                  : "bg-[#005c4b]/50 text-white mr-auto rounded-tr-none border-r-2 border-[#10b981]/40"
+                              }`}
+                            >
+                              <div className={`text-[9px] font-black text-right mb-0.5 ${m.isNoa ? "text-[#30d6b0]" : "text-amber-400"}`}>
+                                {m.sender}
+                              </div>
+                              <div className="font-sans whitespace-pre-wrap">{m.text}</div>
+                              <div className="text-[7.5px] text-zinc-400 text-left pt-0.5 font-mono">{m.time}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* ACTIVE INTEGRATED VOICE MEMO IN WHATSAPP FROM NOA */}
+                        <div className="bg-[#202c33] text-white p-2 border border-zinc-800/60 rounded-xl max-w-[85%] ml-auto rounded-tl-none text-right relative shadow-md z-10 mt-1 flex items-center gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsVoicePlaying(!isVoicePlaying);
+                              if(!isVoicePlaying) {
+                                setVoicePlaybackPercent(0);
+                              }
+                            }}
+                            className="w-7 h-7 rounded-full bg-[#10b981] flex items-center justify-center shrink-0 cursor-pointer hover:bg-emerald-500 transition-all active:scale-90"
+                          >
+                            <span className="text-white text-[9px] font-bold">
+                              {isVoicePlaying ? "⏸" : "▶"}
+                            </span>
+                          </button>
+                          
+                          <div className="flex-1">
+                            <div className="text-[8px] text-[#30d6b0] font-black text-right">הסבר קולי מנועה עוזרת 🎙&nbsp;</div>
+                            <div className="flex items-center gap-1 mt-0.5 justify-end h-4">
+                              <div className="flex-1 bg-zinc-750 h-1 rounded-full overflow-hidden mr-1 relative">
+                                <div 
+                                  className="bg-[#30d6b0] h-full transition-all" 
+                                  style={{ width: `${voicePlaybackPercent}%` }}
+                                />
+                              </div>
+                              {[...Array(5)].map((_, i) => (
+                                <span 
+                                  key={i} 
+                                  className={`w-0.5 rounded bg-[#30d6b0] transition-all ${
+                                    isVoicePlaying 
+                                      ? "animate-pulse" 
+                                      : "opacity-40"
+                                  }`}
+                                  style={{ 
+                                    height: isVoicePlaying ? `${Math.floor(Math.random() * 10) + 4}px` : "5px",
+                                    animationDelay: `${i * 0.1}s`
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <div className="text-[7px] text-zinc-400 self-end font-mono">
+                            {isVoicePlaying ? `0:${String(Math.floor((voicePlaybackPercent / 100) * 14)).padStart(2, '0')}` : "0:14"}
+                          </div>
+                        </div>
+
+                        {/* WhatsApp styled Message bubble */}
+                        <div className="bg-[#005c4b] text-white p-3 rounded-xl max-w-[90%] md:max-w-[85%] mr-auto rounded-tr-none text-right relative shadow-[0_2px_4px_rgba(0,0,0,0.15)] text-xs leading-relaxed space-y-1 z-10 border-r-4 border-emerald-500">
+                          {/* Name mark */}
+                          <div className="text-[#30d6b0] text-[9px] font-bold text-right mb-0.5">
+                            נועה סבן (רובוט תפעול)
+                          </div>
+                          
+                          {/* Styled contents */}
+                          <div 
+                            className="whitespace-pre-wrap font-sans text-right"
+                            dangerouslySetInnerHTML={{ __html: parseWhatsAppTextToHtml(whatsappText) }}
+                          />
+
+                          {/* Bottom Status Info */}
+                          <div className="flex items-center justify-end gap-1 text-[8px] text-white/50 text-left pt-1 font-mono">
+                            <span>08:18</span>
+                            <CheckCheck className="w-3 h-3 text-[#53bdeb]" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* WhatsApp Bottom entry bar mock */}
+                      <div className="bg-[#1f2c34] p-2 flex items-center gap-1.5 border-t border-zinc-800 text-[11px] z-10 shrink-0">
+                        <span className="text-emerald-500 hover:text-emerald-400 cursor-pointer">📎</span>
+                        <div className="flex-1 bg-[#2a3942] rounded-full px-3 py-1 text-zinc-400 text-[10px] text-right truncate">
+                          נוסח מיושר ונשלח לקבוצה
+                        </div>
+                        <span className="text-emerald-500 hover:text-emerald-400 cursor-pointer">🎤</span>
+                      </div>
+                    </div>
+
+                    {/* FORMATTING TOOLBAR & INTUITIVE HELPER BUTTONS */}
+                    <div className="bg-zinc-900/60 p-3 rounded-xl border border-zinc-800 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-zinc-500 font-mono">
+                          הוסף הדגשה או אימוג'ים בלחיצה:
+                        </span>
+                        <span className="text-[10px] text-emerald-400 font-bold font-mono">
+                          סרגל הכלים של נועה
+                        </span>
+                      </div>
+                      
+                      <div className="bg-zinc-950 p-2 rounded-xl border border-zinc-900 flex flex-wrap gap-2 items-center justify-between">
+                        {/* Text stylers */}
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setWhatsappText(prev => prev + " *תיעוד של משאית*")}
+                            className="px-2 py-0.5 bg-zinc-900 hover:bg-zinc-800 hover:text-emerald-400 text-[10px] text-white rounded font-mono font-bold transition-all cursor-pointer"
+                            title="מודגש (Bold)"
+                          >
+                            *B* מודגש
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setWhatsappText(prev => prev + " _בתיאום אישי_")}
+                            className="px-2 py-0.5 bg-zinc-900 hover:bg-zinc-800 hover:text-teal-400 text-[10px] text-white rounded font-mono italic transition-all cursor-pointer"
+                            title="נטוי (Italic)"
+                          >
+                            _I_ נטוי
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setWhatsappText(prev => prev + " ~נמוך~")}
+                            className="px-2 py-0.5 bg-zinc-900 hover:bg-zinc-800 text-[10px] text-white rounded font-mono line-through transition-all cursor-pointer"
+                            title="קו חוצה"
+                          >
+                            ~S~ מבוטל
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setWhatsappText(prev => prev + " `14 טון`")}
+                            className="px-2 py-0.5 bg-zinc-900 hover:bg-zinc-800 text-[10px] text-white rounded font-mono transition-all cursor-pointer"
+                            title="קוד מוטבע"
+                          >
+                            ` קוד
+                          </button>
+                        </div>
+                        
+                        {/* Instant operations Emojis */}
+                        <div className="flex gap-1.5">
+                          {["🚛", "🏗️", "📦", "🏭", "👑", "❤️", "✅", "⚠️", "⏱️"].map(emoji => (
+                            <button
+                              key={emoji}
+                              type="button"
+                              onClick={() => setWhatsappText(prev => prev + " " + emoji)}
+                              className="text-base p-0.5 hover:bg-zinc-800 rounded transition-all cursor-pointer"
+                              title={`הקלד ${emoji}`}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Interactive editor inputs for Rami below preview */}
+                    <div className="bg-zinc-900/60 p-4 rounded-xl border border-zinc-800 space-y-3">
+                      <label className="block text-xs font-bold text-[#d4af37]">ערוך והתאם את נוסח ההודעה:</label>
+                      <textarea
+                        value={whatsappText}
+                        onChange={(e) => setWhatsappText(e.target.value)}
+                        rows={4}
+                        className="w-full text-xs bg-zinc-950 text-white border border-zinc-800 rounded-lg p-2.5 focus:outline-none focus:border-emerald-500 text-right font-sans"
+                        dir="rtl"
+                      />
+
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-300 mb-1">בחר קבוצת יעד להפצה:</label>
+                        <select
+                          value={whatsappRecipient}
+                          onChange={(e) => {
+                            setWhatsappRecipient(e.target.value);
+                            setIsWhatsappSent(false);
+                          }}
+                          className="w-full text-xs bg-zinc-950 text-white border border-zinc-800 rounded-lg p-2 focus:outline-none text-right"
+                        >
+                          <option value="קבוצת הנהגים - ח. סבן">🚛 קבוצת הנהגים - ח. סבן</option>
+                          <option value="ספקים ראשיים (ברזל וצמנט)">🏭 ספקים ראשיים (ברזל וצמנט)</option>
+                          <option value="מנהלי עבודה באתרי בנייה">🏗️ מנהלי עבודה באתרי בנייה</option>
+                          <option value="ראמי סבן - אישי 👑">👑 ראמי סבן - אישי</option>
+                        </select>
+                      </div>
+
+                      <div className="pt-2 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsWhatsappSent(true);
+                            playBeep();
+                            // Post to chat
+                            setMessages((prev) => [
+                              ...prev,
+                              {
+                                id: Date.now().toString(),
+                                sender: "user",
+                                text: `אני מאשר ומפיץ את ההודעה ל-${whatsappRecipient}!`,
+                                time: new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }),
+                              },
+                              {
+                                id: (Date.now() + 1).toString(),
+                                sender: "noa",
+                                text: `עלי! 🚛 ההפצה אל **${whatsappRecipient}** בוצעה בהצלחה מלאה. אין עליך אחי ושותפי! 👑`,
+                                time: new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }),
+                              },
+                            ]);
+                          }}
+                          className="flex-1 py-2 rounded-lg bg-[#25d366] text-black font-extrabold text-xs hover:bg-[#20ba5a] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <Check className="w-4 h-4 text-black" />
+                          <span>אשר ושגר ל-WhatsApp ✅</span>
+                        </button>
+                      </div>
+
+                      {isWhatsappSent && (
+                        <div className="bg-emerald-950/20 text-emerald-400 border border-emerald-500/30 p-2.5 rounded-lg text-center text-[11px] font-bold">
+                          ✓ הודעת ה-WhatsApp הופצה באופן סופי ואושרה על ידי ראמי סבן!
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                );
+              })()}
 
               {/* DISPLAY MODE 2: MORNING EXECUTIVE REPORT (דוח בוקר תפעולי) */}
               {workMode === "report" && (

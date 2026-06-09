@@ -414,7 +414,7 @@ export default function App() {
             {/* Interactive Portrait of Noa */}
             <div className="relative shrink-0">
               <img
-                src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=150&h=150"
+                src="https://i.postimg.cc/dVdCQ7DJ/Whats-App-Image-2026-05-01-at-12-25-35-PM-(5).jpg"
                 alt="נועה סבן"
                 className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.35)]"
                 referrerPolicy="no-referrer"
@@ -490,7 +490,7 @@ export default function App() {
             
             <div className="relative shrink-0">
               <img
-                src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=150&h=150"
+                src="https://i.postimg.cc/m2pj1FbT/logo-rami.png"
                 alt="ראמי סבן"
                 className="w-10 h-10 rounded-full object-cover border-2 border-[#d4af37] shadow-[0_0_8px_rgba(212,175,55,0.2)]"
                 referrerPolicy="no-referrer"
